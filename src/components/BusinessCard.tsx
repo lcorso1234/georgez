@@ -77,6 +77,15 @@ ${photoField}END:VCARD\r
     return `sms:7739103784${separator}body=${encodeURIComponent(message)}`;
   };
 
+  const buildShareableContactUrl = () => {
+    const params = new URLSearchParams({
+      name: formData.name || 'Shared Contact',
+      email: formData.email,
+      phone: formData.phone,
+    });
+    return `${window.location.origin}/api/share-contact?${params.toString()}`;
+  };
+
   const saveContact = async () => {
     try {
       setIsSavingContact(true);
@@ -108,11 +117,13 @@ ${photoField}END:VCARD\r
 
   const sendMessage = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const shareableContactUrl = buildShareableContactUrl();
     const message = [
       'Hi George, I just saved your contact info.',
       `Name: ${formData.name || 'N/A'}`,
       `Email: ${formData.email}`,
       `Phone: ${formData.phone}`,
+      `Shareable contact: ${shareableContactUrl}`,
     ].join('\n');
     window.open(buildSmsUrl(message), '_self');
   };
