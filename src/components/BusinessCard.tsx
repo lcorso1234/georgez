@@ -6,13 +6,41 @@ import styles from './BusinessCard.module.css';
 export default function BusinessCard() {
   const [isJiggling, setIsJiggling] = useState(false);
 
-  const generateVCard = () => {
+  const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    const chunkSize = 0x8000;
+
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+
+    return btoa(binary);
+  };
+
+  const generateVCard = async () => {
+    let photoField = '';
+    try {
+      const imageResponse = await fetch('/Z.png');
+      if (imageResponse.ok) {
+        const imageBuffer = await imageResponse.arrayBuffer();
+        const imageBase64 = arrayBufferToBase64(imageBuffer);
+        photoField = `PHOTO;ENCODING=b;TYPE=PNG:${imageBase64}\n`;
+      }
+    } catch {
+      // Keep vCard generation working even if logo fetch fails.
+    }
+
     const vCard = `BEGIN:VCARD
 VERSION:3.0
 FN:George Zaharoff
 N:Zaharoff;George;;;
 TEL;TYPE=CELL:7739103784
-END:VCARD`;
+EMAIL;TYPE=INTERNET:info@zaharoff.com
+URL:https://zaharoff.com/
+NOTE:The marco polo of fashion and luxury goods sold in America "only".
+${photoField}END:VCARD`;
     
     return new Blob([vCard], { type: 'text/vcard' });
   };
@@ -23,7 +51,7 @@ END:VCARD`;
       setIsJiggling(true);
       setTimeout(() => setIsJiggling(false), 600);
 
-      const vCardBlob = generateVCard();
+      const vCardBlob = await generateVCard();
       const url = URL.createObjectURL(vCardBlob);
       
       // Create temporary link to download vCard
