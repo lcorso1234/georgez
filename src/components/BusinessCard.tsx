@@ -34,32 +34,39 @@ export default function BusinessCard() {
       chunks.push(line.slice(i, i + maxLength));
     }
 
-    return chunks.join('\n ');
+    return chunks.join('\r\n ');
   };
 
   const generateVCard = async () => {
+    const timestamp = new Date().toISOString();
+    const rev = timestamp.replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+    const uid = `world-of-zaharoff-${Date.now()}@zaharoff.com`;
+
     let photoField = '';
     try {
       const imageResponse = await fetch('/Z.png');
       if (imageResponse.ok) {
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBase64 = arrayBufferToBase64(imageBuffer);
-        photoField = `${foldVCardLine(`PHOTO;ENCODING=b;TYPE=PNG:${imageBase64}`)}\n`;
+        photoField = `${foldVCardLine(`PHOTO;ENCODING=BASE64;TYPE=PNG:${imageBase64}`)}\r\n`;
       }
     } catch {
       // Keep vCard generation working even if logo fetch fails.
     }
 
-    const vCard = `BEGIN:VCARD
-VERSION:3.0
-FN:World of Zaharoff
-N:World of Zaharoff;;;;
-ORG:World of Zaharoff
-TEL;TYPE=CELL:7739103784
-EMAIL;TYPE=INTERNET:info@zaharoff.com
-URL:https://zaharoff.com/
-NOTE:The marco polo of fashion and luxury goods sold in America "only".
-${photoField}END:VCARD`;
+    const vCard = `BEGIN:VCARD\r
+VERSION:3.0\r
+FN:World of Zaharoff\r
+N:World of Zaharoff;;;;\r
+ORG:World of Zaharoff\r
+UID:${uid}\r
+REV:${rev}\r
+TEL;TYPE=CELL:7739103784\r
+EMAIL;TYPE=INTERNET:info@zaharoff.com\r
+URL:https://zaharoff.com/\r
+NOTE:The marco polo of fashion and luxury goods sold in America "only".\r
+${photoField}END:VCARD\r
+`;
     
     return new Blob([vCard], { type: 'text/vcard' });
   };
@@ -84,7 +91,7 @@ ${photoField}END:VCARD`;
       // Create temporary link to download vCard
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'george-zaharoff.vcf';
+      link.download = 'world-of-zaharoff.vcf';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
