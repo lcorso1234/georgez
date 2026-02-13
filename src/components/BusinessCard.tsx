@@ -26,6 +26,17 @@ export default function BusinessCard() {
     return btoa(binary);
   };
 
+  const foldVCardLine = (line: string, maxLength = 74) => {
+    if (line.length <= maxLength) return line;
+
+    const chunks: string[] = [];
+    for (let i = 0; i < line.length; i += maxLength) {
+      chunks.push(line.slice(i, i + maxLength));
+    }
+
+    return chunks.join('\n ');
+  };
+
   const generateVCard = async () => {
     let photoField = '';
     try {
@@ -33,7 +44,7 @@ export default function BusinessCard() {
       if (imageResponse.ok) {
         const imageBuffer = await imageResponse.arrayBuffer();
         const imageBase64 = arrayBufferToBase64(imageBuffer);
-        photoField = `PHOTO;ENCODING=b;TYPE=PNG:${imageBase64}\n`;
+        photoField = `${foldVCardLine(`PHOTO;ENCODING=b;TYPE=PNG:${imageBase64}`)}\n`;
       }
     } catch {
       // Keep vCard generation working even if logo fetch fails.
@@ -41,8 +52,9 @@ export default function BusinessCard() {
 
     const vCard = `BEGIN:VCARD
 VERSION:3.0
-FN:George Zaharoff
-N:Zaharoff;George;;;
+FN:World of Zaharoff
+N:World of Zaharoff;;;;
+ORG:World of Zaharoff
 TEL;TYPE=CELL:7739103784
 EMAIL;TYPE=INTERNET:info@zaharoff.com
 URL:https://zaharoff.com/
