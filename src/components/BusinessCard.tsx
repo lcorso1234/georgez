@@ -1,10 +1,17 @@
 'use client';
 
-import { useState } from 'react';
+import { FormEvent, useState } from 'react';
 import styles from './BusinessCard.module.css';
 
 export default function BusinessCard() {
   const [isJiggling, setIsJiggling] = useState(false);
+  const [showMessageForm, setShowMessageForm] = useState(false);
+  const [isSavingContact, setIsSavingContact] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+  });
 
   const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
     let binary = '';
@@ -45,8 +52,16 @@ ${photoField}END:VCARD`;
     return new Blob([vCard], { type: 'text/vcard' });
   };
 
+  const buildSmsUrl = (message: string) => {
+    const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const separator = isiOS ? '&' : '?';
+    return `sms:7739103784${separator}body=${encodeURIComponent(message)}`;
+  };
+
   const saveContact = async () => {
     try {
+      setIsSavingContact(true);
+
       // Trigger jiggle animation
       setIsJiggling(true);
       setTimeout(() => setIsJiggling(false), 600);
@@ -62,23 +77,25 @@ ${photoField}END:VCARD`;
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      // Open SMS with automated message
-      const message = encodeURIComponent("Hi George! I've saved your contact info and you're now part of my network. Looking forward to connecting!");
-      const smsUrl = `sms:7739103784?body=${message}`;
-      window.open(smsUrl, '_self');
+      setShowMessageForm(true);
 
     } catch (error) {
       console.error('Error saving contact:', error);
-      // Fallback: open SMS directly
-      const message = encodeURIComponent("Hi George! I'd like to add you to my contacts and network!");
-      const smsUrl = `sms:7739103784?body=${message}`;
-      window.open(smsUrl, '_self');
+      setShowMessageForm(true);
+    } finally {
+      setIsSavingContact(false);
     }
   };
 
-  const callGeorge = () => {
-    window.open('tel:7739103784', '_self');
+  const sendMessage = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const message = [
+      'Hi George, I just saved your contact info.',
+      `Name: ${formData.name || 'N/A'}`,
+      `Email: ${formData.email}`,
+      `Phone: ${formData.phone}`,
+    ].join('\n');
+    window.open(buildSmsUrl(message), '_self');
   };
 
   return (
@@ -127,6 +144,7 @@ ${photoField}END:VCARD`;
             <div className="space-y-4 mb-8">
               <button
                 onClick={saveContact}
+                disabled={isSavingContact}
                 className={`w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-400 hover:to-green-500 text-white font-bold py-4 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 border-2 border-green-400 relative overflow-hidden ${isJiggling ? styles.jiggleAnimation : ''}`}
               >
                 {/* Button glow effect */}
@@ -135,10 +153,58 @@ ${photoField}END:VCARD`;
                   <svg className="w-6 h-6 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
                   </svg>
-                  Save Contact
+                  {isSavingContact ? 'Saving...' : 'Save Contact'}
                 </div>
               </button>
             </div>
+
+            {showMessageForm && (
+              <div className="mb-8 rounded-xl border border-green-400/30 bg-black/60 p-4">
+                <p className="text-sm text-green-100 mb-3">
+                  Want to send a text now? Fill this out and we will prefill your message.
+                </p>
+                <form onSubmit={sendMessage} className="space-y-3">
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="Your name"
+                    className="w-full rounded-lg border border-green-400/40 bg-black/70 px-3 py-2 text-white placeholder:text-green-200/60 outline-none focus:border-green-300"
+                  />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, email: event.target.value }))}
+                    placeholder="Your email"
+                    required
+                    className="w-full rounded-lg border border-green-400/40 bg-black/70 px-3 py-2 text-white placeholder:text-green-200/60 outline-none focus:border-green-300"
+                  />
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(event) => setFormData((prev) => ({ ...prev, phone: event.target.value }))}
+                    placeholder="Your phone number"
+                    required
+                    className="w-full rounded-lg border border-green-400/40 bg-black/70 px-3 py-2 text-white placeholder:text-green-200/60 outline-none focus:border-green-300"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="flex-1 rounded-lg border border-green-400 bg-green-500/90 px-4 py-2 text-sm font-semibold text-white hover:bg-green-400"
+                    >
+                      Open Text App
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowMessageForm(false)}
+                      className="rounded-lg border border-green-400/40 px-4 py-2 text-sm font-semibold text-green-100 hover:bg-white/10"
+                    >
+                      Not Now
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="text-center border-t border-green-400/30 pt-4">
